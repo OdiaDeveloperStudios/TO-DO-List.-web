@@ -1,0 +1,208 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List (Trello Clone)</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1e1e2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+            color: white;
+            overflow-x: auto;
+        }
+        .board {
+            display: flex;
+            gap: 20px;
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+        .list {
+            background: #2e2e3e;
+            padding: 15px;
+            width: 250px;
+            min-height: 100px;
+            border-radius: 8px;
+            box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            flex-shrink: 0;
+        }
+        .task {
+            background: #4b4b6b;
+            padding: 10px;
+            margin: 5px 0;
+            cursor: grab;
+            border-radius: 5px;
+            position: relative;
+        }
+        .delete-task {
+            cursor: pointer;
+            color: red;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: none;
+            font-size: 14px;
+        }
+        .task:hover .delete-task {
+            display: inline;
+        }
+        .add-task-button {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: orange;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            position: relative;
+        }
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .add-list {
+            background: green;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        .remove-list {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 20px;
+            text-align: center;
+        }
+        .delete-bin {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button class="delete-bin" onclick="confirmClearData()">🗑 Clear All</button>
+        <button class="add-list" onclick="addList()">+ Add Container</button>
+    </div>
+    <div class="board" id="board"></div>
+
+    <script>
+        // Load the data from localStorage when the page loads
+        window.onload = function() {
+            const savedBoard = localStorage.getItem("boardData");
+            if (savedBoard) {
+                document.getElementById("board").innerHTML = savedBoard;
+            }
+        }
+
+        // Save data to localStorage whenever a change occurs
+        function saveData() {
+            const boardHTML = document.getElementById("board").innerHTML;
+            localStorage.setItem("boardData", boardHTML);
+        }
+
+        // Allow drop functionality
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        // Drag functionality for tasks
+        function drag(event) {
+            event.dataTransfer.setData("text", event.target.id);
+        }
+
+        // Handle dropping task into a list
+        function drop(event) {
+            event.preventDefault();
+            const data = event.dataTransfer.getData("text");
+            const draggedElement = document.getElementById(data);
+            if (draggedElement && event.target.classList.contains('list')) {
+                event.target.appendChild(draggedElement);
+            }
+            saveData();
+        }
+
+        // Confirm and clear all data
+        function confirmClearData() {
+            if (confirm("Are you sure you want to clear all data? This action cannot be undone.")) {
+                localStorage.removeItem("boardData"); // Remove data from localStorage
+                document.getElementById("board").innerHTML = ""; // Clear board
+            }
+        }
+
+        // Prompt user to add a task
+        function promptTask(button) {
+            let taskName = prompt("Enter task name:");
+            if (taskName) {
+                let newTask = document.createElement("div");
+                newTask.classList.add("task");
+                newTask.contentEditable = "true";
+                newTask.innerHTML = `${taskName} <span class='delete-task' onclick='deleteTask(this)'>❌</span>`;
+                newTask.draggable = true;
+                newTask.ondragstart = drag;
+                newTask.id = "task-" + Date.now();
+                button.parentElement.insertBefore(newTask, button);
+                saveData();
+            }
+        }
+
+        // Add a new list
+        function addList() {
+            let listName = prompt("Enter the name of the new list:");
+            if (!listName) return;
+            
+            const board = document.getElementById("board");
+            let newList = document.createElement("div");
+            newList.classList.add("list");
+            newList.ondrop = drop;
+            newList.ondragover = allowDrop;
+            newList.innerHTML = ` 
+                <button class="remove-list" onclick="removeList(this)">×</button>
+                <h3 contenteditable="true">${listName}</h3>
+                <button class="add-task-button" onclick="promptTask(this)">+ Add Task</button>
+            `;
+            board.appendChild(newList);
+            saveData();
+        }
+
+        // Remove a list
+        function removeList(button) {
+            button.parentElement.remove();
+            saveData();
+        }
+
+        // Delete a task
+        function deleteTask(icon) {
+            icon.parentElement.remove();
+            saveData();
+        }
+    </script>
+</body>
+</html>
